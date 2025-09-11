@@ -1,0 +1,13 @@
+div{
+  text-align: center;
+  align-items: center;
+}
+input{
+  margin: 10px;
+  padding: 10px;
+  border-radius: 30px;
+}
+button{
+  background-color: rgb(148, 112, 190);
+  border-radius: 30px;
+}
