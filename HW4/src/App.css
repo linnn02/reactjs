@@ -1,0 +1,38 @@
+body{
+  text-align: center;
+  font-family: Arial, sans-serif;
+  background: rgb(82, 36, 96);
+  margin: 0;
+  padding: 0;
+}
+h1{
+  text-align: center;
+  margin: 20px 0;
+  color: #bebebe;
+}
+form{
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+ul{
+  list-style: none;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 0;
+}
+.tasklabel{
+  margin: 10px;
+  gap: 8px;
+}
+button{
+  padding: 15px;
+  border: 1px solid black;
+  border-radius: 30px;
+
+}
+input{
+  border: 1px solid black;
+  border-radius: 30px;
+}
