@@ -1,6 +1,6 @@
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import "./App.css";
-
+import * as Yup from "yup";
 const isEmail = (v = "") =>
   /^(?:[a-zA-Z0-9_'^&+%`{}~|-]+(?:\.[a-zA-Z0-9_'^&+%`{}~|-]+)*)@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(
     v.trim()
@@ -23,59 +23,25 @@ function CourseForm() {
     country: "",
   };
 
-  const validate = (values) => {
-    const errors = {};
-
-    if (!values.fullName.trim()) {
-      errors.fullName = "Full name is required";
-    }
-
-    if (!values.email.trim()) {
-      errors.email = "Email is required";
-    } else if (!isEmail(values.email)) {
-      errors.email = "Invalid email address";
-    }
-
-    if (!values.password) {
-      errors.password = "Password is required";
-    } else if (values.password.length < 6) {
-      errors.password = "Password must be at least 6 characters";
-    }
-
-    if (!values.course) {
-      errors.course = "Please select a course";
-    }
-
-    if (!values.gender) {
-      errors.gender = "Please select gender";
-    }
-
-    if (!values.dob) {
-      errors.dob = "Date of birth is required";
-    }
-
-    if (!values.city.trim()) {
-      errors.city = "City is required";
-    }
-
-    if (!values.country) {
-      errors.country = "Country is required";
-    }
-
-    if (values.zip && !/^\d+$/.test(values.zip)) {
-      errors.zip = "Zip Code must contain only digits";
-    }
-
-    return errors;
-  };
-
+  const validationSchema = Yup.object({
+  fullName: Yup.string().trim().required("Full name is required"),
+  email: Yup.string().trim().email("Invalid email address").required("Email is required"),
+  password: Yup.string().min(6, "Password must be at least 6 characters").required("Password is required"),
+  course: Yup.string().required("Please select a course"),
+  gender: Yup.string().required("Please select gender"),
+  dob: Yup.date().required("Date of birth is required"),
+  city: Yup.string().trim().required("City is required"),
+  country: Yup.string().required("Country is required"),
+  zip: Yup.string().matches(/^\d*$/, "Zip Code must contain only digits").nullable(),
+});
+  
   const onSubmit = (values) => {
     alert(JSON.stringify(values, null, 2));
   };
 
   return (
     <div>
-      <Formik initialValues={initialValues} validate={validate} onSubmit={onSubmit}>
+      <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={onSubmit}>
         {({ errors, touched }) => (
           <Form noValidate>
             <h1>Course Application</h1>
