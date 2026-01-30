@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Lab 1.1 — Imperative (jQuery)</title>
+
+        <style>
+        .highlight {
+            background: yellow;
+        }
+        </style>
+
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    </head>
+
+    <body>
+        <h1>Imperative: jQuery Toggle Highlight</h1>
+
+        <button id="toggleBtn">Toggle Highlight</button>
+
+        <p id="text">Нажими кнопку, чтобы добавить/убрать подсветку</p>
+
+        <script>
+        $("#toggleBtn").on("click", function () {
+            $("#text").toggleClass("highlight");
+        });
+        </script>
+    </body>
+</html>
