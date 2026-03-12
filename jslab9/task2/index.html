@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lab 9.2 - Smart Home Mediator + Command</title>
+    <style>
+    body {
+        font-family: Arial, sans-serif;
+        background: white;
+        margin: 0;
+        padding: 20px;
+        color: #222;
+    }
+    
+    h1, h2 {
+        margin-top: 0;
+    }
+    
+    .container {
+        display: grid;
+        gap: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+    
+    .card {
+        background: white;
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    }
+    
+    button {
+        margin: 6px 6px 6px 0;
+        padding: 10px 14px;
+        border: none;
+        border-radius: 8px;
+        background: blue;
+        color: white;
+        cursor: pointer;
+    }
+    
+    button:hover {
+        background: blue;
+    }
+    
+    button.secondary {
+        background: grey;
+    }
+    
+    button.warning {
+        background: red;
+    }
+    
+    .log {
+        background: black;
+        color: white;
+        padding: 12px;
+        border-radius: 10px;
+        height: 260px;
+        overflow: auto;
+        white-space: pre-wrap;
+        font-size: 14px;
+    }
+    
+    .status-box {
+        background: white;
+        border: 1px solid white;
+        border-radius: 10px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .history {
+        padding-left: 18px;
+    }
+    </style>
+    </head>
+    <body>
+        <h1>Lab 9 Smart Home Automation</h1>
+        
+        <div class="container">
+            <div class="card">
+                <h2>Light Controls</h2>
+                <button id="turnOn">Turn ON Light</button>
+                <button id="turnOff">Turn OFF Light</button>
+                <button id="brightness50">Brightness 50%</button>
+                <button id="brightness100">Brightness 100%</button>
+            </div>
+            
+            <div class="card">
+                <h2>Thermostat</h2>
+                <button id="temp22">Set 22°C</button>
+                <button id="temp30">Set 30°C</button>
+                <button id="modeCool">Mode Cool</button>
+            </div>
+            
+            <div class="card">
+                <h2>Security</h2>
+                <button id="armSecurity">Arm</button>
+                <button id="disarmSecurity">Disarm</button>
+                <button id="triggerAlert" class="warning">Trigger Alert</button>
+            </div>
+            
+            <div class="card">
+                <h2>Command Controls</h2>
+                <button id="undoBtn" class="secondary">Undo</button>
+                <button id="redoBtn" class="secondary">Redo</button>
+                <div>
+                    <h3>Command History</h3>
+                    <ul id="historyList" class="history"></ul>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Device States</h2>
+                <div id="deviceStates"></div>
+            </div>
+            
+            <div class="card">
+                <h2>System Log</h2>
+                <div id="log" class="log"></div>
+            </div>
+        </div>
+        
+        <script type="module">
+        import { Light } from "./devices/Light.js";
+        import { Thermostat } from "./devices/Thermostat.js";
+        import { SecuritySystem } from "./devices/SecuritySystem.js";
+        import { HomeMediator } from "./mediator/HomeMediator.js";
+        import {
+            TurnOnLightCommand,
+            TurnOffLightCommand,
+            SetBrightnessCommand
+        } from "./commands/LightCommands.js";
+        import { CommandManager } from "./commands/CommandManager.js";
+        
+        const logElement = document.getElementById("log");
+        const deviceStates = document.getElementById("deviceStates");
+        const historyList = document.getElementById("historyList");
+        
+        function log(message) {
+            const time = new Date().toLocaleTimeString();
+            logElement.textContent += `[${time}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        const mediator = new HomeMediator(log);
+        const commandManager = new CommandManager(log);
+        
+        const livingRoomLight = new Light("Living Room Light", "Living Room");
+        const thermostat = new Thermostat("Main Thermostat", "Hall");
+        const security = new SecuritySystem("Home Security");
+        
+        mediator.registerDevice(livingRoomLight);
+        mediator.registerDevice(thermostat);
+        mediator.registerDevice(security);
+        
+        mediator.addRule(
+            (device, state) => device.type === "thermostat" && state.temperature >= 30,
+            () => {
+                log("[Automation] Temperature too high -> turning light off to save energy");
+                livingRoomLight.turnOff();
+            }
+        );
+        
+        mediator.addRule(
+            (device, state) => device.type === "security" && state.alert === true,
+            () => {
+                log("[Automation] Security alert -> setting light brightness to 100%");
+                livingRoomLight.turnOn();
+                livingRoomLight.setBrightness(100);
+            }
+        );
+        
+        function renderStates() {
+            const devices = [livingRoomLight, thermostat, security];
+            deviceStates.innerHTML = "";
+            
+            devices.forEach((device) => {
+                const div = document.createElement("div");
+                div.className = "status-box";
+                div.innerHTML = `
+                <strong>${device.name}</strong>
+                <pre>${JSON.stringify(device.getState(), null, 2)}</pre>
+                `;
+                deviceStates.appendChild(div);
+            });
+        }
+        
+        function renderHistory() {
+            historyList.innerHTML = "";
+            commandManager.getHistory().forEach((item) => {
+                const li = document.createElement("li");
+                li.textContent = item;
+                historyList.appendChild(li);
+            });
+        }
+        
+        function refreshUI() {
+            renderStates();
+            renderHistory();
+        }
+        
+        document.getElementById("turnOn").addEventListener("click", () => {
+            commandManager.execute(new TurnOnLightCommand(livingRoomLight));
+            refreshUI();
+        });
+        
+        document.getElementById("turnOff").addEventListener("click", () => {
+            commandManager.execute(new TurnOffLightCommand(livingRoomLight));
+            refreshUI();
+        });
+        
+        document.getElementById("brightness50").addEventListener("click", () => {
+            commandManager.execute(new SetBrightnessCommand(livingRoomLight, 50));
+            refreshUI();
+        });
+        
+        document.getElementById("brightness100").addEventListener("click", () => {
+            commandManager.execute(new SetBrightnessCommand(livingRoomLight, 100));
+            refreshUI();
+        });
+        
+        document.getElementById("temp22").addEventListener("click", () => {
+            thermostat.setTemperature(22);
+            refreshUI();
+        });
+        
+        document.getElementById("temp30").addEventListener("click", () => {
+            thermostat.setTemperature(30);
+            refreshUI();
+        });
+        
+        document.getElementById("modeCool").addEventListener("click", () => {
+            thermostat.setMode("cool");
+            refreshUI();
+        });
+        
+        document.getElementById("armSecurity").addEventListener("click", () => {
+            security.arm();
+            refreshUI();
+        });
+        
+        document.getElementById("disarmSecurity").addEventListener("click", () => {
+            security.disarm();
+            refreshUI();
+        });
+        
+        document.getElementById("triggerAlert").addEventListener("click", () => {
+            security.triggerAlert();
+            refreshUI();
+        });
+        
+        document.getElementById("undoBtn").addEventListener("click", () => {
+            commandManager.undo();
+            refreshUI();
+        });
+        
+        document.getElementById("redoBtn").addEventListener("click", () => {
+            commandManager.redo();
+            refreshUI();
+        });
+        
+        refreshUI();
+    </script>
+    </body>
+</html>

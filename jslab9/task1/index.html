@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lab 9 News Aggregator Pub/Sub</title>
+    <style>
+    body {
+        font-family: Arial, sans-serif;
+        background: white;
+        margin: 0;
+        padding: 20px;
+        color: #222;
+    }
+
+    h1, h2 {
+        margin-top: 0;
+    }
+
+    .container {
+        display: grid;
+        gap: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+
+    .card {
+        background: white;
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    }
+
+    button {
+        margin: 6px 6px 6px 0;
+        padding: 10px 14px;
+        border: none;
+        border-radius: 8px;
+        background: blue;
+        color: white;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: blue;
+    }
+
+    button.secondary {
+        background: grey;
+    }
+
+    button.danger {
+        background: red;
+    }
+
+    .log {
+        background: black;
+        color: white;
+        padding: 12px;
+        border-radius: 10px;
+        height: 260px;
+        overflow: auto;
+        white-space: pre-wrap;
+        font-size: 14px;
+    }
+
+    .news-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 320px;
+        overflow: auto;
+    }
+
+    .news-item {
+        border: 1px solid white;
+        border-radius: 10px;
+        padding: 10px;
+        background: white;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        margin-right: 6px;
+        background: white;
+        color: blue;
+    }
+
+    .urgent {
+        background: white;
+        color: red;
+    }
+    </style>
+    </head>
+    <body>
+        <h1>Lab 9 Observer / Pub-Sub News Aggregator</h1>
+
+        <div class="container">
+            <div class="card">
+                <h2>Publish News</h2>
+                <button id="techNews">Publish Tech News</button>
+                <button id="sportsNews">Publish Sports News</button>
+                <button id="businessNews">Publish Business News</button>
+                <button id="urgentNews" class="danger">Publish Urgent News</button>
+            </div>
+            
+            <div class="card">
+                <h2>Subscribers</h2>
+                <button id="subscribeEmail">Subscribe Email</button>
+                <button id="unsubscribeEmail" class="secondary">Unsubscribe Email</button>
+                <br />
+                <button id="subscribePush">Subscribe Push</button>
+                <button id="unsubscribePush" class="secondary">Unsubscribe Push</button>
+                <br />
+                <button id="subscribeDashboard">Subscribe Dashboard</button>
+                <button id="unsubscribeDashboard" class="secondary">Unsubscribe Dashboard</button>
+            </div>
+            
+            <div class="card">
+                <h2>Dashboard Widget</h2>
+                <div id="dashboardNews" class="news-list"></div>
+            </div>
+            
+            <div class="card">
+                <h2>System Log</h2>
+                <div id="log" class="log"></div>
+            </div>
+        </div>
+        
+        <script type="module">
+        import { NewsPublisher } from "./publisher/NewsPublisher.js";
+        import { EmailNotifier } from "./subscribers/EmailNotifier.js";
+        import { PushNotifier } from "./subscribers/PushNotifier.js";
+        import { DashboardWidget } from "./subscribers/DashboardWidget.js";
+        
+        const logElement = document.getElementById("log");
+        const dashboardNews = document.getElementById("dashboardNews");
+        
+        function log(message) {
+            const time = new Date().toLocaleTimeString();
+            logElement.textContent += `[${time}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        function renderDashboard(articles) {
+            dashboardNews.innerHTML = "";
+            
+            articles.forEach((article) => {
+                const div = document.createElement("div");
+                div.className = "news-item";
+                
+                div.innerHTML = `
+                <div>
+                    <span class="badge">${article.category}</span>
+                    <span class="badge ${article.priority === "urgent" ? "urgent" : ""}">
+                            ${article.priority}
+                            </span>
+                            </div>
+                            <strong>${article.headline}</strong>
+                            <p>${article.content}</p>
+                            <small>${article.source} | ${new Date(article.timestamp).toLocaleTimeString()}</small>
+                            `;
+
+                            dashboardNews.appendChild(div);
+                        });
+                    }
+
+                    const publisher = new NewsPublisher("GlobalNews");
+                    const emailNotifier = new EmailNotifier("student@example.com", log);
+                    const pushNotifier = new PushNotifier("MobileApp", log);
+                    const dashboardWidget = new DashboardWidget("MainWidget", log, renderDashboard);
+
+                    document.getElementById("subscribeEmail").addEventListener("click", () => {
+                        emailNotifier.unsubscribe();
+                        emailNotifier.subscribe(["tech", "business", "urgent"]);
+                    });
+
+                    document.getElementById("unsubscribeEmail").addEventListener("click", () => {
+                        emailNotifier.unsubscribe();
+                    });
+
+                    document.getElementById("subscribePush").addEventListener("click", () => {
+                        pushNotifier.unsubscribe();
+                        pushNotifier.subscribe(["sports", "tech", "urgent"]);
+                    });
+
+                    document.getElementById("unsubscribePush").addEventListener("click", () => {
+                        pushNotifier.unsubscribe();
+                    });
+
+                    document.getElementById("subscribeDashboard").addEventListener("click", () => {
+                        dashboardWidget.unsubscribe();
+                        dashboardWidget.subscribe(["all", "tech", "sports", "business", "urgent"]);
+                    });
+
+                    document.getElementById("unsubscribeDashboard").addEventListener("click", () => {
+                        dashboardWidget.unsubscribe();
+                    });
+
+                    document.getElementById("techNews").addEventListener("click", () => {
+                        publisher.publishArticle(
+                            "tech",
+                            "New AI Chip Released",
+                            "A next-generation AI chip was introduced for faster model training.",
+                            "normal");
+                            log("Tech article published");
+                    });
+
+                    document.getElementById("sportsNews").addEventListener("click", () => {
+                        publisher.publishArticle(
+                            "sports",
+                            "Local Team Wins Final",
+                            "The city team won the championship after a dramatic finish.",
+                            "normal");
+                            log("Sports article published");
+                    });
+
+                    document.getElementById("businessNews").addEventListener("click", () => {
+                        publisher.publishArticle(
+                            "business",
+                            "Startup Raises Funding",
+                            "A local startup has secured a major investment round.",
+                            "normal");
+                            log("Business article published");
+                    });
+
+                    document.getElementById("urgentNews").addEventListener("click", () => {
+                        publisher.publishArticle(
+                            "urgent",
+                            "mergency Weather Weather Alert",
+                            "Heavy storm warning issued for the region.",
+                            "urgent");
+                            log("Urgent article published");
+                    });
+
+                    dashboardWidget.subscribe(["tech", "sports", "business", "urgent"]);
+        </script>
+    </body>
+</html>

@@ -1,0 +1,66 @@
+export class EventBus {
+    constructor() {
+        this.events = new Map();
+        this.onceEvents = new Map();
+    }
+
+    subscribe(event, callback) {
+        if (!this.events.has(event)) {
+            this.events.set(event, []);
+        }
+
+        const subscribers = this.events.get(event);
+        subscribers.push(callback);
+
+        return () => {
+            const index = subscribers.indexOf(callback);
+            if (index > -1) {
+                subscribers.splice(index, 1);
+            }
+        };
+    }
+
+    subscribeOnce(event, callback) {
+        if (!this.onceEvents.has(event)) {
+            this.onceEvents.set(event, []);
+        }
+        this.onceEvents.get(event).push(callback);
+    }
+
+    publish(event, data) {
+        if (this.onceEvents.has(event)) {
+            const onceCallbacks = this.onceEvents.get(event);
+            onceCallbacks.forEach((callback) => {
+                try {
+                    callback(data);
+                } catch (error) {
+                    console.error(error);
+                }
+            });
+            this.onceEvents.delete(event);
+        }
+
+        if (this.events.has(event)) {
+            this.events.get(event).forEach((callback) => {
+                try {
+                    callback(data);
+                } catch (error) {
+                    console.error(error);
+                }
+            });
+        }
+    }
+
+    clear(event) {
+        if (event) {
+            this.events.delete(event);
+            this.onceEvents.delete(event);
+        } else {
+            this.events.clear();
+            this.onceEvents.clear();
+        }
+    }
+}
+
+const eventBus = new EventBus();
+export default eventBus;
