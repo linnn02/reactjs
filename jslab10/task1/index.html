@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lab 10 Task 1 - MVC Todo</title>
+    <style>
+    body {
+        font-family: Arial, sans-serif;
+        max-width: 700px;
+        margin: 40px auto;
+        padding: 20px;
+        background: #f7f8fa;
+    }
+    
+    .todo-app {
+        background: #ffffff;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+    }
+    
+    h1 {
+        margin-top: 0;
+        text-align: center;
+    }
+    
+    .todo-stats {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+        color: #555;
+        font-size: 14px;
+    }
+    
+    .todo-form {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .todo-form input {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #d9d9d9;
+        border-radius: 8px;
+    }
+    
+    .todo-form button {
+        padding: 10px 18px;
+        border: none;
+        border-radius: 8px;
+        background: #0d6efd;
+        color: white;
+        cursor: pointer;
+    }
+    
+    .todo-form button:hover {
+        background: #0b5ed7;
+    }
+    
+    .todo-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .todo-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        background: #f5f6f8;
+    }
+    
+    .todo-item.completed .todo-text {
+        text-decoration: line-through;
+        color: #888;
+    }
+    
+    .todo-text {
+        flex: 1;
+        cursor: pointer;
+    }
+    
+    .todo-delete {
+        border: none;
+        border-radius: 8px;
+        background: #dc3545;
+        color: white;
+        padding: 8px 12px;
+        cursor: pointer;
+    }
+    
+    .todo-delete:hover {
+        background: #bb2d3b;
+    }
+    
+    .edit-input {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid #999;
+        border-radius: 6px;
+    }
+    </style>
+    </head>
+    <body>
+        <div id="app"></div>
+        
+        <script type="module">
+        import { TodoController } from "./mvc/controller/TodoController.js";
+        
+        new TodoController("app");
+        </script>
+        </body>
+        </html>
