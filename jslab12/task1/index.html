@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Lab 12 Task 1</title>
+    </head>
+    <body>
+        <h1>Lab 12.1 - Module Systems Demo</h1>
+        <div id="output"></div>
+        
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <script src="https://underscorejs.org/underscore-min.js"></script>
+        <script src="modules/umd/MyLib.js"></script>
+        
+        <script>
+        const output = document.getElementById('output');
+        
+        const arr = [1, 2, 2, 3, 4, 4];
+        const unique = MyLib.utils.array.unique(arr);
+        
+        const text = MyLib.utils.string.capitalize('hello world');
+        
+        const emitter = new MyLib.events.EventEmitter();
+        let message = '';
+        emitter.on('done', function (data) {
+            message = data;
+        });
+        emitter.emit('done', 'UMD EventEmitter works');
+        
+        output.innerHTML = `
+        <p><strong>Version:</strong> ${MyLib.version}</p>
+        <p><strong>Unique array:</strong> ${unique.join(', ')}</p>
+        <p><strong>Capitalize:</strong> ${text}</p>
+        <p><strong>Event:</strong> ${message}</p>
+        `;
+        </script>
+    </body>
+</html>
