@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Lab 12 Task 2</title>
+    </head>
+    <body>
+        <h1>Lab 12.2 - Nested Namespacing Demo</h1>
+        <div id="output"></div>
+        
+        <script src="namespace/core.js"></script>
+        <script src="namespace/utils.js"></script>
+        <script src="namespace/plugins.js"></script>
+        
+        <script>
+        const output = document.getElementById('output');
+        
+        const arr = [1, 2, 2, 3, null, false, 4];
+        const unique = MyApp.utils.array.unique(arr);
+        const compact = MyApp.utils.array.compact(arr);
+        
+        const title = MyApp.utils.string.titleize('hello modular javascript');
+        const date = MyApp.utils.date.format(new Date(), 'YYYY-MM-DD HH:mm:ss');
+        const number = MyApp.utils.number.format(1234567);
+        
+        MyApp.plugins.storage.local.set('demo', { name: 'Kamila', lab: 12 });
+        const saved = MyApp.plugins.storage.local.get('demo');
+        
+        MyApp.plugins.router.addRoute('/user/:id', function (params) {
+            console.log('Route params:', params);
+        });
+        MyApp.plugins.router.navigate('/user/25');
+        
+        const validation = MyApp.plugins.validation.validate(
+            { email: 'test@example.com' },
+            {
+                email: {
+                    required: true,
+                    pattern: MyApp.plugins.validation.rules.email}
+                }
+            );
+            
+            output.innerHTML = `
+            <p><strong>Library:</strong> ${MyApp.core.name}</p>
+            <p><strong>Version:</strong> ${MyApp.core.version}</p>
+            <p><strong>Unique:</strong> ${unique.join(', ')}</p>
+            <p><strong>Compact:</strong> ${compact.join(', ')}</p>
+            <p><strong>Titleize:</strong> ${title}</p>
+            <p><strong>Date format:</strong> ${date}</p>
+            <p><strong>Formatted number:</strong> ${number}</p>
+            <p><strong>Saved localStorage:</strong> ${JSON.stringify(saved)}</p>
+            <p><strong>Validation result:</strong> ${validation.valid}</p>
+            <p><strong>Current route:</strong> ${MyApp.plugins.router.getCurrent()}</p>
+            `;
+        </script>
+    </body>
+</html>
