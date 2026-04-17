@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <title>Lab 11.2 Demo</title>
+</head>
+<body>
+    <h1>Lab 11.2 Demo</h1>
+    <pre id="output">Запуск демонстрации...</pre>
+
+    <script type="module">
+    import PromiseHttpClient from '../task1/async/PromiseHttpClient.js';
+    import { DataFetcher, fetchFirstSuccess } from './async/DataFetcher.js';
+    import {
+        AsyncPipeline,
+        mapParallel,
+        mapSequential,
+        filterParallel,
+        reduceAsync,
+        AsyncBatcher,
+    } from './async/Pipeline.js';
+    import {
+        CancellableFetcher,
+        createCancellableTask,
+        TaskRunner,
+    } from './async/CancellableFetcher.js';
+
+    const output = document.getElementById('output');
+
+    function log(message) {
+        output.textContent += `\n${message}`;
+        console.log(message);
+    }
+
+    async function demoDataFetcher() {
+        log('\n--- DATA FETCHER ---');
+
+        const client = new PromiseHttpClient('https://jsonplaceholder.typicode.com');
+        const fetcher = new DataFetcher(client);
+
+        const details = await fetcher.fetchUserWithDetails(1);
+        log(`Пользователь: ${details.user.name}`);
+        log(`Количество постов: ${details.posts.length}`);
+
+        const manyUsers = await fetcher.fetchMultipleUsers([1, 2, 300]);
+        log(`Успешно загружено пользователей: ${manyUsers.totalSuccessful}`);
+        log(`Ошибок: ${manyUsers.totalFailed}`);
+
+        const firstSuccess = await fetchFirstSuccess(
+        [client.get('/users/999999'), client.get('/users/1')],
+        3000
+        ).catch((error) => `Ошибка: ${error.message}`);
+
+        log(
+        `Первый успешный результат: ${
+            typeof firstSuccess === 'string' ? firstSuccess : firstSuccess.name
+        }`
+        );
+    }
+
+    async function demoPipeline() {
+        log('\n--- PIPELINE ---');
+
+        const pipeline = new AsyncPipeline();
+
+        pipeline
+        .use(async (data, context) => ({
+            data: data.map((x) => x * 2),
+            context,
+        }))
+        .use(async (payload) => ({
+            data: payload.data.filter((x) => x > 5),
+            context: { ...payload.context, processed: true },
+        }));
+
+        const pipelineResult = await pipeline.execute([1, 2, 3, 4], {});
+        log(`Результат pipeline: ${JSON.stringify(pipelineResult)}`);
+
+        const parallel = await mapParallel(
+        [1, 2, 3, 4],
+        async (item) => {
+            await new Promise((resolve) => setTimeout(resolve, 300));
+            return item * 10;
+        },
+        2
+        );
+        log(`mapParallel: ${JSON.stringify(parallel)}`);
+
+        const sequential = await mapSequential(
+        [1, 2, 3],
+        async (item) => item + 1
+        );
+        log(`mapSequential: ${JSON.stringify(sequential)}`);
+
+        const filtered = await filterParallel(
+        [1, 2, 3, 4, 5],
+        async (item) => item % 2 === 0,
+        2
+        );
+        log(`filterParallel: ${JSON.stringify(filtered)}`);
+
+        const reduced = await reduceAsync(
+        [1, 2, 3, 4],
+        async (acc, item) => acc + item,
+        0
+        );
+        log(`reduceAsync: ${reduced}`);
+
+        const batcher = new AsyncBatcher(
+        async (items) => items.map((item) => item * 100),
+        { batchSize: 3, maxWaitMs: 500 }
+        );
+
+        const batchResults = await Promise.all([
+        batcher.add(1),
+        batcher.add(2),
+        batcher.add(3),
+        ]);
+
+        log(`AsyncBatcher: ${JSON.stringify(batchResults)}`);
+    }
+
+    async function demoCancellation() {
+        log('\n--- CANCELLATION ---');
+
+        const cancellableFetcher = new CancellableFetcher();
+        const requestId = 'demo-request';
+
+        const requestPromise = cancellableFetcher
+        .fetch('https://jsonplaceholder.typicode.com/users/1', { id: requestId })
+        .then((response) => response.json());
+
+        cancellableFetcher.cancel(requestId);
+
+        try {
+        await requestPromise;
+        } catch (error) {
+        log(`Отмена fetch сработала: ${error.message}`);
+        }
+
+        const task = createCancellableTask(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        return 'task completed';
+        });
+
+        task.cancel();
+
+        try {
+        await task.execute();
+        } catch (error) {
+        log(`Отмена task сработала: ${error.message}`);
+        }
+
+        const runner = new TaskRunner();
+
+        const { id } = runner.add(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return 'runner result';
+        });
+
+        const runnerResult = await runner.run(id);
+        log(`TaskRunner: ${runnerResult}`);
+    }
+
+    async function run() {
+        try {
+        output.textContent = '';
+        await demoDataFetcher();
+        await demoPipeline();
+        await demoCancellation();
+        log('\nДемо task2 завершено');
+        } catch (error) {
+        log(`Ошибка: ${error.message}`);
+        }
+    }
+
+    run();
+    </script>
+</body>
+</html>
