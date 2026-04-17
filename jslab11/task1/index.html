@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <title>Lab 11.1 Demo</title>
+</head>
+<body>
+    <h1>Lab 11.1 Demo</h1>
+    <pre id="output">Запуск демонстрации...</pre>
+    
+    <script type="module">
+    import PromiseHttpClient from './async/PromiseHttpClient.js';
+    import { withRetry, RetryableError, withRetryAndTimeout } from './async/retry.js';
+    import { AsyncQueue, RateLimiter } from './async/AsyncQueue.js';
+    
+    const output = document.getElementById('output');
+    
+    function log(message) {
+        output.textContent += `\n${message}`;
+        console.log(message);
+    }
+    
+    async function demoHttpClient() {
+        log('\n--- HTTP CLIENT ---');
+        const client = new PromiseHttpClient('https://jsonplaceholder.typicode.com');
+        
+        const user = await client.get('/users/1');
+        log(`Пользователь загружен: ${user.name}`);
+        
+        const post = await client.post('/posts', {
+            title: 'demo title',
+            body: 'demo body',
+            userId: 1,
+        });
+        log(`POST выполнен, id ответа: ${post.id}`);
+    }
+    
+    async function demoRetry() {
+        log('\n--- RETRY ---');
+        
+        let attempts = 0;
+        
+        const result = await withRetry(
+            async () => {
+                attempts += 1;
+                
+                if (attempts < 3) {
+                    throw new RetryableError(`Временная ошибка на попытке ${attempts}`, 500);
+                }
+                
+                return `Успех на попытке ${attempts}`;
+            },
+            {
+                maxAttempts: 4,
+                baseDelay: 500,
+                onRetry: ({ attempt, nextDelay }) => {
+                    log(`Повтор после попытки ${attempt}, следующая задержка ${nextDelay} мс`);
+                },
+            }
+        );
+        
+        log(result);
+        }
+        
+        async function demoRetryWithTimeout() {
+            log('\n--- RETRY + TIMEOUT ---');
+            
+            const result = await withRetryAndTimeout(
+                async () => {
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                    return 'Операция завершилась вовремя';
+                },
+                {
+                    timeout: 2000,
+                    maxAttempts: 2,
+                    baseDelay: 300,
+                }
+            );
+            
+            log(result);
+            }
+            
+            async function demoQueue() {
+                log('\n--- ASYNC QUEUE ---');
+                
+                const queue = new AsyncQueue(2);
+                
+                const tasks = [1, 2, 3, 4, 5].map((num) => async () => {
+                    await new Promise((resolve) => setTimeout(resolve, 700));
+                    log(`Задача ${num} завершена`);
+                    return `result-${num}`;
+                });
+                
+                const results = await queue.addAll(tasks);
+                log(`Результаты очереди: ${JSON.stringify(results)}`);
+                log(`Статистика: ${JSON.stringify(queue.getStats())}`);
+            }
+            
+            async function demoRateLimiter() {
+                log('\n--- RATE LIMITER ---');
+                
+                const limiter = new RateLimiter(2, 1000);
+                
+                for (let i = 1; i <= 5; i += 1) {
+                    await limiter.acquire();
+                    log(`Запрос ${i} разрешён`);
+                }
+            }
+            
+            async function run() {
+                try {
+                    output.textContent = '';
+                    await demoHttpClient();
+                    await demoRetry();
+                    await demoRetryWithTimeout();
+                    await demoQueue();
+                    await demoRateLimiter();
+                    log('\nДемо task1 завершено');
+                } catch (error) {
+                    log(`Ошибка: ${error.message}`);
+                }
+            }
+            
+            run();
+            </script>
+        </body>
+    </html>
